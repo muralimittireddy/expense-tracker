@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.api.router import api_router
 from app.core.config import settings
 from app.db.database import Base, engine, get_db
-from app.db.models import User, Expense, Budget, Category # Import models to ensure they are registered with SQLAlchemy
+from app.db.models import User, Expense, Budget, ExpenseCategory # Import models to ensure they are registered with SQLAlchemy
 
 # Create database tables if they don't exist
 # In a production environment, you would use Alembic for migrations
@@ -20,7 +20,9 @@ app = FastAPI(
 # Set up CORS middleware
 origins = [
     "http://localhost",
-    "http://localhost:3000",  # React frontend development server
+    "http://34.135.246.72:5173",
+    "http://localhost:8000",
+    "http://localhost:5173",  # React frontend development server
     "http://localhost:80",    # Nginx default port
 ]
 
