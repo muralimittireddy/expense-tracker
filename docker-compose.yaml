@@ -1,0 +1,50 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: expensetracker_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql # For initial table creation
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: expensetracker_backend
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      SECRET_KEY: ${SECRET_KEY}
+      API_V1_STR: ${API_V1_STR}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend/app:/app/app # Mount for hot-reloading during development
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload # --reload for development
+  frontend:
+        build: ./frontend
+        container_name: expensetracker_frontend
+        # Environment variable for the React app's API base URL
+        environment:
+          VITE_API_BASE_URL: http://backend:8000/api/v1 # 'backend' is the service name in docker-compose
+        ports:
+          - "5173:80" # Map host port 5173 to container's Nginx port 80
+        depends_on:
+          backend:
+            condition: service_started # Frontend only needs backend to be started, not necessarily healthy (for initial load)
+
+
+volumes:
+  pgdata:
