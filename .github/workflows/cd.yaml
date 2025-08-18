@@ -19,6 +19,8 @@ jobs:
           username: ${{ secrets.GCP_USER }}
           key: ${{ secrets.GCP_SSH_KEY }}
           script: |
+            # Add user's local bin directory to PATH
+            export PATH="$PATH:/home/${{ secrets.GCP_USER }}/bin"
             # Navigate to the project directory
             cd /home/${{ secrets.GCP_USER }}/expense-tracker
 
@@ -31,8 +33,8 @@ jobs:
             echo "DOCKER_HUB_USERNAME=${{secrets.DOCKER_HUB_USERNAME}}" >> .env
 
              # Stop any existing containers and pull the latest images
-            docker compose --file docker-compose.prod.yaml down
-            docker compose --file docker-compose.prod.yaml pull
+            docker-compose --f docker-compose.prod.yaml down
+            docker-compose --f docker-compose.prod.yaml pull
 
             # Start the new containers
-            docker compose --file docker-compose.prod.yaml up -d
+            docker-compose --f docker-compose.prod.yaml up -d
