@@ -19,32 +19,31 @@ jobs:
           username: ${{ secrets.GCP_USER }}
           key: ${{ secrets.GCP_SSH_KEY }}
           script: |
-            # Add user's local bin directory to PATH
             export PATH="$PATH:/home/${{ secrets.GCP_USER }}/bin"
-            # Navigate to the project directory
             cd /home/${{ secrets.GCP_USER }}/expense-tracker
 
-            # Create the production .env file on the VM
-            echo "POSTGRES_DB=${{ secrets.POSTGRES_DB }}" > .env
-            echo "POSTGRES_USER=${{ secrets.POSTGRES_USER }}" >> .env
-            echo "POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> .env
-            echo "DATABASE_URL=postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@db:5432/${{ secrets.POSTGRES_DB }}" >> .env
-            echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
-            echo "DOCKER_HUB_USERNAME=${{secrets.DOCKER_HUB_USERNAME}}" >> .env
-            echo "API_V1_STR=${{secrets.API_V1_STR}}" >> .env
-            echo "ACCESS_TOKEN_EXPIRE_MINUTES=${{secrets.ACCESS_TOKEN_EXPIRE_MINUTES}}" >> .env
+            # Create the production .env file
+            cat > .env <<EOL
+            POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+            DATABASE_URL=postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@db:5432/${{ secrets.POSTGRES_DB }}
+            SECRET_KEY=${{ secrets.SECRET_KEY }}
+            DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
+            API_V1_STR=${{ secrets.API_V1_STR }}
+            ACCESS_TOKEN_EXPIRE_MINUTES=${{ secrets.ACCESS_TOKEN_EXPIRE_MINUTES }}
+            EOL
 
-            # Log in to Docker Hub on the VM
-            # This is crucial for pulling private images or avoiding rate limits for public images
-            #echo "${{ secrets.DOCKER_HUB_TOKEN }}" | docker login --username ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+            # ✅ Log in to Docker Hub (required for private OR rate-limited pulls)
+            echo "${{ secrets.DOCKER_HUB_TOKEN }}" | docker login --username ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
 
-            # Export DOCKER_HUB_USERNAME for shell's environment before docker-compose pull
-            # This ensures image names like ${DOCKER_HUB_USERNAME}/image:latest are correctly resolved
-            #export DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
+            # ✅ Export DOCKER_HUB_USERNAME so compose can substitute it #
+            export DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
 
-             # Stop any existing containers and pull the latest images
+            # Stop old containers and pull fresh images
             docker-compose -f docker-compose.prod.yaml down
             docker-compose -f docker-compose.prod.yaml pull
 
-            # Start the new containers
+            # Start new containers
             docker-compose -f docker-compose.prod.yaml up -d
+
