@@ -31,8 +31,8 @@ jobs:
             echo "DOCKER_HUB_USERNAME=${{secrets.DOCKER_HUB_USERNAME}}" >> .env
 
             # Stop any existing containers and pull the latest images
-            docker-compose -f docker-compose.prod.yaml down
-            docker-compose -f docker-compose.prod.yaml pull
+            docker compose -f docker-compose.prod.yaml down
+            docker compose -f docker-compose.prod.yaml pull
 
             # Start the new containers
-            docker-compose -f docker-compose.prod.yaml up -d
+            docker compose -f docker-compose.prod.yaml up -d
