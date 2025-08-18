@@ -30,9 +30,9 @@ jobs:
             echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
             echo "DOCKER_HUB_USERNAME=${{secrets.DOCKER_HUB_USERNAME}}" >> .env
 
-            # Stop any existing containers and pull the latest images
-            docker compose -f docker-compose.prod.yaml down
-            docker compose -f docker-compose.prod.yaml pull
+             # Stop any existing containers and pull the latest images
+            docker compose --file docker-compose.prod.yaml down
+            docker compose --file docker-compose.prod.yaml pull
 
             # Start the new containers
-            docker compose -f docker-compose.prod.yaml up -d
+            docker compose --file docker-compose.prod.yaml up -d
