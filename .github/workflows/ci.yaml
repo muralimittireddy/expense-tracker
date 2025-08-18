@@ -20,6 +20,8 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
       - name: Build and push backend image
         uses: docker/build-push-action@v4
@@ -28,6 +30,8 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/expensetracker-backend:latest
           file: ./backend/Dockerfile
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Build and push frontend image
         uses: docker/build-push-action@v4
@@ -36,3 +40,5 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/expensetracker-frontend:latest
           file: ./frontend/Dockerfile
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
