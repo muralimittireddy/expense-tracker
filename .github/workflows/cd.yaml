@@ -32,6 +32,14 @@ jobs:
             echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
             echo "DOCKER_HUB_USERNAME=${{secrets.DOCKER_HUB_USERNAME}}" >> .env
 
+            # Log in to Docker Hub on the VM
+            # This is crucial for pulling private images or avoiding rate limits for public images
+            echo "${{ secrets.DOCKER_HUB_TOKEN }}" | docker login --username ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+
+            # Export DOCKER_HUB_USERNAME for shell's environment before docker-compose pull
+            # This ensures image names like ${DOCKER_HUB_USERNAME}/image:latest are correctly resolved
+            export DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
+
              # Stop any existing containers and pull the latest images
             docker-compose -f docker-compose.prod.yaml down
             docker-compose -f docker-compose.prod.yaml pull
