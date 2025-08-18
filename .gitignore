@@ -1,0 +1,5 @@
+# Environment variables file
+.env
+
+# Pyhton dependencies (if you're not using a specific virtual environment)
+\backend\app\__pycache__
