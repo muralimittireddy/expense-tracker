@@ -36,7 +36,7 @@ services:
     image: ${DOCKER_HUB_USERNAME}/expensetracker-frontend:latest
     container_name: expensetracker_frontend
     environment:
-      VITE_API_BASE_URL: http://backend:8000/api/v1
+      VITE_API_BASE_URL: http://${GCP_HOST}:8000/api/v1
     ports:
       - "5173:80"
     depends_on:

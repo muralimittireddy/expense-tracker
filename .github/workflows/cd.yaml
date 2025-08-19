@@ -32,6 +32,7 @@ jobs:
             DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
             API_V1_STR=${{ vars.API_V1_STR }}
             ACCESS_TOKEN_EXPIRE_MINUTES=${{ vars.ACCESS_TOKEN_EXPIRE_MINUTES }}
+            GCP_HOST=${{secrets.GCP_HOST}}
             EOL
 
             # ✅ Log in to Docker Hub (required for private OR rate-limited pulls)
