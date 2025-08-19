@@ -20,6 +20,8 @@ services:
   backend:
     image: ${DOCKER_HUB_USERNAME}/expensetracker-backend:latest
     container_name: expensetracker_backend
+    env_file:
+      - .env  # This line tells Docker Compose to load all variables from the .env file
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       SECRET_KEY: ${SECRET_KEY}

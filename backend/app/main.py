@@ -32,6 +32,7 @@ origins = [
     "http://localhost:8000",
     "http://localhost:5173",  # React frontend development server
     "http://localhost:80",    # Nginx default port
+    "http://34.172.240.198:5173"
 ]
 
 app.add_middleware(
