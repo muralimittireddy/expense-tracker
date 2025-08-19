@@ -1,13 +1,17 @@
 name: CD Pipeline
 
 on:
-  push:
+  workflow_run: # Changed trigger to workflow_run
+    workflows: ["CI Pipeline"] # Specify the name of your CI workflow
+    types:
+      - completed # Trigger when the CI workflow completes
     branches:
-      - main
+      - main # Only run if the CI workflow was on the main branch
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
