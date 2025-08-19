@@ -30,8 +30,8 @@ jobs:
             DATABASE_URL=postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@db:5432/${{ secrets.POSTGRES_DB }}
             SECRET_KEY=${{ secrets.SECRET_KEY }}
             DOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
-            API_V1_STR=${{ secrets.API_V1_STR }}
-            ACCESS_TOKEN_EXPIRE_MINUTES=${{ secrets.ACCESS_TOKEN_EXPIRE_MINUTES }}
+            API_V1_STR=${{ vars.API_V1_STR }}
+            ACCESS_TOKEN_EXPIRE_MINUTES=${{ vars.ACCESS_TOKEN_EXPIRE_MINUTES }}
             EOL
 
             # ✅ Log in to Docker Hub (required for private OR rate-limited pulls)
@@ -46,4 +46,3 @@ jobs:
 
             # Start new containers
             docker-compose -f docker-compose.prod.yaml up -d
-
