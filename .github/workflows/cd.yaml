@@ -6,7 +6,7 @@ on:
     types:
       - completed # Trigger when the CI workflow completes
     branches:
-      - main # Only run if the CI workflow was on the main branches
+      - main # Only run if the CI workflow was on the main branch 
 
 jobs:
   deploy:
