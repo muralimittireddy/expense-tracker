@@ -27,12 +27,13 @@ app = FastAPI(
 
 # Set up CORS middleware
 origins = [
-    "http://localhost",
-    "http://vm_ip:5173",
-    "http://localhost:8000",
-    "http://localhost:5173",  # React frontend development server
-    "http://localhost:80",    # Nginx default port
+    # "*"
+    # "http://localhost",
+    # "http://localhost:8000",
+    # "http://localhost:5173",  # React frontend development server
+    # "http://localhost:80",    # Nginx default port
     "http://34.172.240.198:5173"
+    # "http://34.172.240.198:8000"
 ]
 
 app.add_middleware(
