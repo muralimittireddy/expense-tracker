@@ -18,7 +18,7 @@ from app.db.models import User, Expense, Budget, ExpenseCategory # Import models
 load_dotenv()
 
 # Read values
-vm_ip = os.getenv("GCP_HOST")
+vm_ip = os.getenv("CORS_ORIGIN")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -27,12 +27,13 @@ app = FastAPI(
 
 # Set up CORS middleware
 origins = [
+    vm_ip
     # "*"
     # "http://localhost",
     # "http://localhost:8000",
     # "http://localhost:5173",  # React frontend development server
     # "http://localhost:80",    # Nginx default port
-    "http://34.172.240.198:5173"
+    
     # "http://34.172.240.198:8000"
 ]
 
