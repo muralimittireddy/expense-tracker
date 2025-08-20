@@ -24,6 +24,7 @@ COPY --from=build /app/dist /usr/share/nginx/html
 # Copy custom Nginx configuration (optional, but good practice for SPAs)
 # If you have a custom nginx.conf, place it in frontend/nginx.conf
 # COPY ./nginx.conf /etc/nginx/conf.d/default.conf
+COPY ./nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose port 80
 EXPOSE 80

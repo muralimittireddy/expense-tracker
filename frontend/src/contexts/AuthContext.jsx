@@ -2,6 +2,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import PropTypes from 'prop-types';
 import axiosInstance from '../api/axiosInstance'; // Axios instance for API calls
+import { useNavigate } from 'react-router-dom';
 
 export const AuthContext = createContext(null);
 
@@ -9,6 +10,7 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true); // To indicate auth status is being checked
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Check for token in localStorage on app load
@@ -69,7 +71,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('accessToken');
     setIsAuthenticated(false);
     setUser(null);
-    window.location.href = '/login'; // Redirect to login after logout
+    navigate('/login');
   };
 
   const value = {

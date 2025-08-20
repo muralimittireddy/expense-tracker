@@ -6,25 +6,30 @@ import RegisterPage from './pages/RegisterPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import ExpensesPage from './pages/ExpensesPage.jsx';
 import BudgetPage from './pages/BudgetPage.jsx';
+import SplitsPage from './pages/SplitsPage.jsx';
+import GroupDetailPage from './pages/GroupDetailPage.jsx';
 import ProtectedRoute from './components/Layout/ProtectedRoute.jsx';
-import { useAuth } from './hooks/useAuth'; // Import useAuth to check auth status for logout button
+// import { useAuth } from './hooks/useAuth'; // Import useAuth to check auth status for logout button
+import { AuthProvider } from './contexts/AuthContext.jsx';
+import Navbar from './components/Layout/Navbar.jsx';
 
 function App() {
-    const { isAuthenticated, logout } = useAuth(); // Use useAuth hook
+    // const { isAuthenticated, logout } = useAuth(); // Use useAuth hook
 
     return (
         <Router>
-            {/* AuthProvider wraps the entire application to provide authentication context */}
+            <AuthProvider>
+                {/* AuthProvider wraps the entire application to provide authentication context */}
             {/* <AuthProvider> */}
                 <div className="min-h-screen bg-gray-100 font-inter antialiased">
                     {/* Navigation Header */}
-                    <nav className="bg-white shadow-md p-4">
+                    {/* <nav className="bg-white shadow-md p-4">
                         <div className="container mx-auto flex justify-between items-center">
                             <Link to="/" className="text-2xl font-bold text-indigo-700">
                                 Expense Tracker
                             </Link>
                             <div className="flex items-center space-x-4">
-                                {/* Conditional rendering for navigation links based on authentication */}
+                                { Conditional rendering for navigation links based on authentication }
                                 {!isAuthenticated ? (
                                     <>
                                         <Link to="/login" className="text-indigo-600 hover:text-indigo-800 px-3 py-2 rounded-md text-sm font-medium">
@@ -38,6 +43,9 @@ function App() {
                                     <>
                                         <Link to="/dashboard" className="text-indigo-600 hover:text-indigo-800 px-3 py-2 rounded-md text-sm font-medium">
                                             Dashboard
+                                        </Link>
+                                        <Link to="/splits" className="text-indigo-600 hover:text-indigo-800 px-3 py-2 rounded-md text-sm font-medium">
+                                            Splits Group
                                         </Link>
                                         <Link to="/expenses" className="text-indigo-600 hover:text-indigo-800 px-3 py-2 rounded-md text-sm font-medium">
                                             Expenses
@@ -55,7 +63,9 @@ function App() {
                                 )}
                             </div>
                         </div>
-                    </nav>
+                    </nav> */}
+
+                    <Navbar />
 
                     {/* Main Content Area */}
                     <main className="container mx-auto p-6">
@@ -68,6 +78,8 @@ function App() {
                                 <Route path="/dashboard" element={<DashboardPage />} />
                                 <Route path="/expenses" element={<ExpensesPage />} />
                                 <Route path="/budget" element={<BudgetPage />} />
+                                <Route path="/splits" element={<SplitsPage />} />
+                                <Route path="/splits/:groupId" element={<GroupDetailPage />} />
                             </Route>
 
                             {/* Home Page */}
@@ -89,6 +101,8 @@ function App() {
                     </main>
                 </div>
             {/* </AuthProvider> */}
+            </AuthProvider>
+            
         </Router>
     );
 }

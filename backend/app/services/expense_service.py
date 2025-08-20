@@ -12,6 +12,13 @@ def create_user_expense(db: Session, expense: ExpenseCreate, user_id: int):
     """Creates a new expense for a given user."""
     expense_in_db = expense.model_dump()
     expense_in_db["owner_id"] = user_id
+       # If paid_by_user_id is not provided, default it to the owner_id
+    if expense_in_db.get("paid_by_user_id") is None:
+        expense_in_db["paid_by_user_id"] = user_id
+
+    # Ensure expense_shares is an empty list if None, as SQLAlchemy expects a list-like collection
+    if expense_in_db.get("expense_shares") is None:
+        expense_in_db["expense_shares"] = []
     db_expense = crud.create_item(db, Expense, expense_in_db)
     return db_expense
 

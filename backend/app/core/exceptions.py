@@ -21,3 +21,7 @@ class ExpenseNotFoundException(CustomException):
 class BudgetNotFoundException(CustomException):
     def __init__(self):
         super().__init__(status_code=status.HTTP_404_NOT_FOUND, detail="Budget not found for the specified month/year")
+
+class GroupNotFoundException(CustomException): # NEW: Added GroupNotFoundException
+    def __init__(self):
+        super().__init__(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found or you do not have access to it")
