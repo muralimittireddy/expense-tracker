@@ -3,3 +3,6 @@
 
 # Pyhton dependencies (if you're not using a specific virtual environment)
 \backend\app\__pycache__
+
+__pycache__/
+*.pyc
