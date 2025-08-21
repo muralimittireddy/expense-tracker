@@ -31,7 +31,8 @@ def read_expenses(
     limit: int = 100,
     start_date: datetime | None = Query(None, description="Filter expenses from this date (YYYY-MM-DD)"),
     end_date: datetime | None = Query(None, description="Filter expenses up to this date (YYYY-MM-DD)"),
-    category: ExpenseCategory | None = Query(None, description="Filter expenses by category")
+    category: ExpenseCategory | None = Query(None, description="Filter expenses by category"),
+    group_id: int | None = Query(None, description="Filter expenses by group ID") # NEW: Added group_id query parameter
 ):
     """
     Retrieve expenses for the authenticated user with optional filters.
@@ -43,7 +44,8 @@ def read_expenses(
         limit=limit,
         start_date=start_date,
         end_date=end_date,
-        category=category
+        category=category,
+        group_id=group_id # NEW: Pass group_id to service
     )
     return expenses
 

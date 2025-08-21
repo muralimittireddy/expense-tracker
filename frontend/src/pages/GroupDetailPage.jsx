@@ -6,7 +6,7 @@ import Modal from '../components/common/Modal';
 import Input from '../components/common/Input';
 import { useAuth } from '../hooks/useAuth';
 import axiosInstance from '../api/axiosInstance';
-import { formatCurrency, formatDate } from '../utils/helpers'; // Assuming these helpers exist
+import { formatCurrency, formatDate } from '../utils/helpers';
 
 function GroupDetailPage() {
   const { groupId } = useParams(); // Get groupId from URL
@@ -15,7 +15,12 @@ function GroupDetailPage() {
 
   const [group, setGroup] = useState(null);
   const [transactions, setTransactions] = useState([]); // Group expenses/transactions
-  const [balances, setBalances] = useState([]); // Who owes whom
+  const [balancesSummary, setBalancesSummary] = useState({ // Store the entire balances response
+    group_id: null,
+    total_owed_by_you: 0,
+    total_owed_to_you: 0,
+    individual_balances: [],
+  });
   const [members, setMembers] = useState([]); // Group members
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,6 +29,7 @@ function GroupDetailPage() {
   const [showSplitExpenseModal, setShowSplitExpenseModal] = useState(false);
   const [showRecordSettlementModal, setShowRecordSettlementModal] = useState(false);
   const [showEditGroupModal, setShowEditGroupModal] = useState(false);
+  const [showBalancesOverviewModal, setShowBalancesOverviewModal] = useState(false); // New state for balances modal
 
   // Split Expense Form State
   const [splitDescription, setSplitDescription] = useState('');
@@ -38,51 +44,44 @@ function GroupDetailPage() {
   const [settlementAmount, setSettlementAmount] = useState('');
 
   // Fetch group details, transactions, and members
-  useEffect(() => {
+  const fetchData = async () => {
     if (!isAuthenticated || !groupId) {
       setLoading(false);
       return;
     }
 
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // Fetch Group Details
-        const groupRes = await axiosInstance.get(`/splits/groups/${groupId}`);
-        setGroup(groupRes.data);
-        setMembers(groupRes.data.members || []); // Assuming members are part of group response
+    setLoading(true);
+    setError(null);
+    try {
+      // Fetch Group Details
+      const groupRes = await axiosInstance.get(`/splits/groups/${groupId}`);
+      setGroup(groupRes.data);
+      setMembers(groupRes.data.members || []);
 
-        // Set initial paidBy for split expense form to current user
-        if (user && !paidBy) {
-          setPaidBy(user.id);
-        }
-
-        // Fetch Group Transactions (expenses associated with this group)
-        // Assuming an endpoint like /expenses?group_id=X
-        const transactionsRes = await axiosInstance.get(`/expenses/`, { params: { group_id: groupId } });
-        setTransactions(transactionsRes.data);
-
-        // Fetch Balances (who owes whom)
-        // This endpoint needs to be implemented on the backend
-        // For now, use mock data or a simplified calculation
-        const mockBalances = [
-          { from_user: 'Alice', to_user: 'Bob', amount: 15.50, status: 'owes' },
-          { from_user: 'Charlie', to_user: 'Alice', amount: 20.00, status: 'owes' },
-          { from_user: 'You', to_user: 'Bob', amount: 5.00, status: 'owes' },
-        ];
-        setBalances(mockBalances); // Replace with actual API call later
-
-      } catch (err) {
-        console.error('Failed to fetch group details:', err.response?.data || err.message);
-        setError('Failed to load group details. Please try again.');
-      } finally {
-        setLoading(false);
+      // Set initial paidBy for split expense form to current user
+      if (user && !paidBy) {
+        setPaidBy(user.id);
       }
-    };
 
+      // Fetch Group Transactions (expenses associated with this group)
+      const transactionsRes = await axiosInstance.get(`/expenses/`, { params: { group_id: groupId } });
+      setTransactions(transactionsRes.data);
+
+      // Fetch Balances (who owes whom) - Now from the new backend endpoint
+      const balancesRes = await axiosInstance.get(`/splits/groups/${groupId}/balances`);
+      setBalancesSummary(balancesRes.data); // Set the entire response object
+
+    } catch (err) {
+      console.error('Failed to fetch group details:', err.response?.data || err.message);
+      setError('Failed to load group details. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
-  }, [isAuthenticated, groupId, user]); // Refetch when auth, group ID, or user changes
+  }, [isAuthenticated, groupId, user?.id]); // Refetch when auth, group ID, or user ID changes
 
   // Handle Split Expense Submission
   const handleSplitExpense = async (e) => {
@@ -96,7 +95,8 @@ function GroupDetailPage() {
     }
 
     try {
-      // Assuming an endpoint for adding group expenses
+      // For simplicity, assuming equal split for now.
+      // In a full implementation, you'd calculate and send expense_shares here.
       const newExpense = {
         description: splitDescription,
         amount: parseFloat(splitAmount),
@@ -104,12 +104,10 @@ function GroupDetailPage() {
         category: "Other", // Default category for group expenses, can be made selectable
         group_id: parseInt(groupId),
         paid_by_user_id: parseInt(paidBy),
-        // For simplicity, assuming equal split for now.
-        // In a full implementation, you'd calculate and send expense_shares here.
-        // For now, backend will likely just store the main expense.
+        // expense_shares would be calculated and sent here in a full implementation
       };
 
-      await axiosInstance.post('/expenses/', newExpense); // Use existing expense endpoint
+      await axiosInstance.post('/expenses/', newExpense);
       
       // Reset form and close modal
       setSplitDescription('');
@@ -117,10 +115,7 @@ function GroupDetailPage() {
       setSplitDate(new Date().toISOString().split('T')[0]);
       setSelectedMembers([]);
       setShowSplitExpenseModal(false);
-      // Re-fetch data to update transactions and balances
-      // You'll need to re-call fetchData() or specific parts of it
-      // For now, a simple refresh:
-      window.location.reload(); // Temporary for full refresh, replace with targeted fetch
+      fetchData(); // Re-fetch data to update transactions and balances
     } catch (err) {
       console.error('Failed to add split expense:', err.response?.data || err.message);
       setError('Failed to add split expense.');
@@ -152,7 +147,7 @@ function GroupDetailPage() {
       setSettlementToUser('');
       setSettlementAmount('');
       setShowRecordSettlementModal(false);
-      window.location.reload(); // Temporary for full refresh, replace with targeted fetch
+      fetchData(); // Re-fetch data to update transactions and balances
     } catch (err) {
       console.error('Failed to record settlement:', err.response?.data || err.message);
       setError('Failed to record settlement.');
@@ -187,9 +182,14 @@ function GroupDetailPage() {
           <h1 className="text-3xl font-bold text-gray-800">{group.name}</h1>
           {group.description && <p className="text-gray-600 mt-1">{group.description}</p>}
         </div>
-        <Button onClick={() => setShowEditGroupModal(true)} variant="secondary">
-          Edit Group
-        </Button>
+        <div className="flex space-x-2"> {/* Container for buttons */}
+          <Button onClick={() => setShowEditGroupModal(true)} variant="secondary" className="px-3 py-1 text-sm"> {/* Reduced size */}
+            Edit Group
+          </Button>
+          <Button onClick={() => setShowBalancesOverviewModal(true)} variant="outline" className="px-3 py-1 text-sm"> {/* New button */}
+            View Balances
+          </Button>
+        </div>
       </div>
 
       {/* Action Buttons: Split Expense and Record Settlement */}
@@ -202,28 +202,7 @@ function GroupDetailPage() {
         </Button>
       </div>
 
-      {/* Balances Section */}
-      <div className="bg-gray-50 p-6 rounded-lg shadow-sm mb-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Who Owes Whom</h2>
-        {balances.length === 0 ? (
-          <p className="text-gray-500 text-center">No outstanding balances.</p>
-        ) : (
-          <ul className="space-y-2">
-            {balances.map((balance, index) => (
-              <li key={index} className="flex justify-between items-center bg-white p-3 rounded-md shadow-sm">
-                <span className="text-gray-700">
-                  {balance.from_user} owes {balance.to_user}
-                </span>
-                <span className="font-bold text-red-600">
-                  {formatCurrency(balance.amount)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {/* Transactions Section */}
+      {/* Transactions Section (now only group transactions) */}
       <div className="bg-gray-50 p-6 rounded-lg shadow-sm">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Transactions</h2>
         {transactions.length === 0 ? (
@@ -434,6 +413,57 @@ function GroupDetailPage() {
           <Button variant="danger" className="w-full">
             Leave Group (Coming Soon)
           </Button>
+        </div>
+      </Modal>
+
+      {/* Balances Overview Modal */}
+      <Modal
+        isOpen={showBalancesOverviewModal}
+        onClose={() => setShowBalancesOverviewModal(false)}
+        title="Balances Overview"
+        footer={
+          <Button variant="outline" onClick={() => setShowBalancesOverviewModal(false)}>
+            Close
+          </Button>
+        }
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4 text-center mb-4">
+            <div className="bg-red-100 p-4 rounded-lg">
+              <p className="text-sm text-red-700">You Owe</p>
+              <p className="text-2xl font-bold text-red-800">{formatCurrency(balancesSummary.total_owed_by_you)}</p>
+            </div>
+            <div className="bg-green-100 p-4 rounded-lg">
+              <p className="text-sm text-green-700">Others Owe You</p>
+              <p className="text-2xl font-bold text-green-800">{formatCurrency(balancesSummary.total_owed_to_you)}</p>
+            </div>
+          </div>
+
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Individual Balances</h3>
+          {balancesSummary.individual_balances.length === 0 ? (
+            <p className="text-gray-500 text-center">No balances to display.</p>
+          ) : (
+            <ul className="divide-y divide-gray-200">
+              {balancesSummary.individual_balances.map((balance) => {
+                // Skip displaying the current user's own net balance in this list
+                if (balance.user_id === user?.id) return null;
+
+                const isOwedByYou = balance.net_balance < 0; // If net_balance is negative, you owe them
+                const displayAmount = formatCurrency(Math.abs(balance.net_balance));
+                const textColorClass = isOwedByYou ? 'text-red-600' : 'text-green-600';
+                const message = isOwedByYou
+                  ? `You owe ${balance.username}`
+                  : `${balance.username} owes you`;
+
+                return (
+                  <li key={balance.user_id} className="py-2 flex justify-between items-center">
+                    <span className="text-gray-700">{message}</span>
+                    <span className={`font-bold ${textColorClass}`}>{displayAmount}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       </Modal>
     </div>

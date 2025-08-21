@@ -3,10 +3,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.db.database import get_db
-from app.schemas.group import GroupCreate, GroupResponse
+from app.schemas.group import GroupCreate, GroupResponse, GroupBalancesResponse # Import GroupBalancesResponse
 from app.services import group_service
 from app.api.deps import get_current_user # Dependency to get authenticated user
-from app.core.exceptions import GroupNotFoundException
+from app.core.exceptions import GroupNotFoundException # Import custom exception
 
 router = APIRouter()
 
@@ -32,6 +32,7 @@ def read_groups(
     """
     groups = group_service.get_user_groups(db=db, user_id=current_user["id"])
     return groups
+
 @router.get("/{group_id}", response_model=GroupResponse)
 def read_group(
     group_id: int,
@@ -44,5 +45,20 @@ def read_group(
     try:
         group = group_service.get_user_group_by_id(db=db, group_id=group_id, user_id=current_user["id"])
         return group
+    except GroupNotFoundException as e:
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+
+@router.get("/{group_id}/balances", response_model=GroupBalancesResponse) # NEW: Balances endpoint
+def get_group_balances_endpoint(
+    group_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Calculate and retrieve balances for a specific group.
+    """
+    try:
+        balances_data = group_service.get_group_balances(db=db, group_id=group_id, current_user_id=current_user["id"])
+        return balances_data
     except GroupNotFoundException as e:
         raise HTTPException(status_code=e.status_code, detail=e.detail)
