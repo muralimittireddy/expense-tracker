@@ -58,17 +58,20 @@ The project is containerized using **Docker** and **Docker Compose**.
     - ACCESS_TOKEN_EXPIRE_MINUTES=30
     - GCP_HOST=your_gcp_vm_ip_or_domain
     - FRONTEND_PORT=80
+
 ⚠️ In production, this file is dynamically created by the CD pipeline.
+
 3. **Run the application**:
 
-  Development:
+  - Development:
 
-    docker-compose up --build -d
+        docker-compose up --build -d
 
 
-  Production:
+  - Production:
 
-    docker-compose -f docker-compose.prod.yaml up --build -d
+        docker-compose -f docker-compose.prod.yaml up --build -d
+    
 4. **Access the application**:
 
     - Backend API → http://localhost:8000/api/v1
