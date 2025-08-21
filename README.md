@@ -49,15 +49,15 @@ The project is containerized using **Docker** and **Docker Compose**.
    git clone https://github.com/muralimittireddy/expense-tracker.git
    cd expense-tracker
 2. **Create an .env file at the root**:
-    POSTGRES_DB=your_database_name
-    POSTGRES_USER=your_db_user
-    POSTGRES_PASSWORD=your_db_password
-    SECRET_KEY=a_very_secret_key
-    DOCKER_HUB_USERNAME=your_dockerhub_username
-    API_V1_STR=/api/v1
-    ACCESS_TOKEN_EXPIRE_MINUTES=30
-    GCP_HOST=your_gcp_vm_ip_or_domain
-    FRONTEND_PORT=80
+    - POSTGRES_DB=your_database_name
+    - POSTGRES_USER=your_db_user
+    - POSTGRES_PASSWORD=your_db_password
+    - SECRET_KEY=a_very_secret_key
+    - DOCKER_HUB_USERNAME=your_dockerhub_username
+    - API_V1_STR=/api/v1
+    - ACCESS_TOKEN_EXPIRE_MINUTES=30
+    - GCP_HOST=your_gcp_vm_ip_or_domain
+    - FRONTEND_PORT=80
 ⚠️ In production, this file is dynamically created by the CD pipeline.
 3. **Run the application**:
 
@@ -71,24 +71,24 @@ The project is containerized using **Docker** and **Docker Compose**.
     docker-compose -f docker-compose.prod.yaml up --build -d
 4. **Access the application**:
 
-    Backend API → http://localhost:8000/api/v1
+    - Backend API → http://localhost:8000/api/v1
     
-    Frontend → http://localhost:5173
+    - Frontend → http://localhost:5173
 
 ---
 
 ## 🚀 CI/CD Pipelines
-  CI Pipeline (ci.yaml)
+  ### CI Pipeline (ci.yaml)
 
-  Triggered on push and pull_request to main.
+  - Triggered on push and pull_request to main.
   
-  Builds and pushes Docker images (frontend & backend) to Docker Hub.
+  - Builds and pushes Docker images (frontend & backend) to Docker Hub.
 
-  CD Pipeline (cd.yaml)
+  ### CD Pipeline (cd.yaml)
   
-  Triggered after CI pipeline completion on main.
+  - Triggered after CI pipeline completion on main.
   
-  Connects to GCP VM via SSH, pulls latest code, creates production .env, and redeploys using Docker Compose.
+  - Connects to GCP VM via SSH, pulls latest code, creates production .env, and redeploys using Docker Compose.
   
 Workflows are located in .github/workflows/.
 
