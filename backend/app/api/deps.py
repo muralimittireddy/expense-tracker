@@ -12,7 +12,7 @@ from app.schemas.token import TokenData
 from app.schemas.user import UserInDB
 from app.core.exceptions import UserNotFoundException # Import custom exception
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"/{settings.API_V1_STR}/auth/token")
 
 async def get_current_user(
     db: Session = Depends(get_db),
