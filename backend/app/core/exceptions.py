@@ -10,6 +10,10 @@ class UserNotFoundException(CustomException):
     def __init__(self):
         super().__init__(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
+class EmailNotFoundException(CustomException):
+    def __init__(self):
+        super().__init__(status_code=status.HTTP_404_NOT_FOUND, detail="Email not found")
+
 class UserAlreadyExistsException(CustomException):
     def __init__(self):
         super().__init__(status_code=status.HTTP_409_CONFLICT, detail="User with this username or email already exists")

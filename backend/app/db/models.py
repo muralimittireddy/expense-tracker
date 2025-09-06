@@ -1,5 +1,4 @@
-# backend/app/db/models.py
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, Table, Text
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, Table, Text, Boolean, UniqueConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.db.database import Base
@@ -21,8 +20,8 @@ class ExpenseCategory(str, enum.Enum):
 group_members_association_table = Table(
     "group_members",
     Base.metadata,
-    Column("group_id", Integer, ForeignKey("groups.id"), primary_key=True),
-    Column("user_id", Integer, ForeignKey("users.id"), primary_key=True),
+    Column("group_id", Integer, ForeignKey("groups.id", ondelete="CASCADE"), primary_key=True),
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
     Column("joined_at", DateTime(timezone=True), server_default=func.now())
 )
 
@@ -30,18 +29,14 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
+    username = Column(String(255), unique=True, index=True, nullable=False)
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    hashed_password = Column(String(255), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # Explicitly define foreign_keys for the 'expenses' relationship
-    expenses = relationship(
-        "Expense",
-        back_populates="owner",
-        foreign_keys="[Expense.owner_id]" # This user owns these expenses
-    )
+    # Relationships
+    expenses = relationship("Expense", back_populates="owner", foreign_keys="[Expense.owner_id]")
     budgets = relationship("Budget", back_populates="owner")
     created_groups = relationship("Group", back_populates="creator")
     member_of_groups = relationship(
@@ -50,22 +45,21 @@ class User(Base):
         back_populates="members"
     )
     # New relationships for split-wise
-    # Explicitly define foreign_keys for the 'paid_expenses' relationship
     paid_expenses = relationship(
-        "Expense",
+        "GroupExpense",
         back_populates="payer",
-        foreign_keys="[Expense.paid_by_user_id]" # This user paid for these expenses
+        foreign_keys="[GroupExpense.paid_by_user_id]"
     )
-    expense_shares_owed = relationship("ExpenseShare", back_populates="user_owing")
-    settlements_made = relationship("Settlement", back_populates="from_user", foreign_keys="[Settlement.from_user_id]")
-    settlements_received = relationship("Settlement", back_populates="to_user", foreign_keys="[Settlement.to_user_id]")
+    expense_shares_owed = relationship("GroupExpenseShare", back_populates="user_owing")
+    settlements_made = relationship("Settlement", back_populates="payer", foreign_keys="[Settlement.payer_id]")
+    settlements_received = relationship("Settlement", back_populates="receiver", foreign_keys="[Settlement.receiver_id]")
 
 
 class Expense(Base):
     __tablename__ = "expenses"
 
     id = Column(Integer, primary_key=True, index=True)
-    description = Column(String, index=True)
+    description = Column(String(255), index=True)
     amount = Column(Float, nullable=False)
     date = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     category = Column(
@@ -73,72 +67,99 @@ class Expense(Base):
         default=ExpenseCategory.OTHER,
         nullable=False
     )
-    owner_id = Column(Integer, ForeignKey("users.id"))
-    group_id = Column(Integer, ForeignKey("groups.id"), nullable=True) # New
-    paid_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=False) # New
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    owner = relationship("User", back_populates="expenses", foreign_keys="[Expense.owner_id]")
-    group = relationship("Group", back_populates="expenses") # New
-    payer = relationship("User", back_populates="paid_expenses", foreign_keys="[Expense.paid_by_user_id]") # New
-    expense_shares = relationship("ExpenseShare", back_populates="expense", cascade="all, delete-orphan") # New
+    # Relationships
+    owner = relationship("User", back_populates="expenses")
+
 
 class Budget(Base):
     __tablename__ = "budgets"
 
     id = Column(Integer, primary_key=True, index=True)
-    month = Column(Integer, nullable=False) # e.g., 1 for January, 12 for December
+    month = Column(Integer, nullable=False)
     year = Column(Integer, nullable=False)
     amount = Column(Float, nullable=False)
-    owner_id = Column(Integer, ForeignKey("users.id"))
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
+    __table_args__ = (UniqueConstraint("owner_id", "month", "year"),)
+
+    # Relationships
     owner = relationship("User", back_populates="budgets")
+
 
 class Group(Base):
     __tablename__ = "groups"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    description = Column(Text, nullable=True) # New
-    created_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True) # Matches the SQL
+    created_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
+    # Relationships
     creator = relationship("User", back_populates="created_groups")
     members = relationship(
         "User",
         secondary=group_members_association_table,
         back_populates="member_of_groups"
     )
-    expenses = relationship("Expense", back_populates="group") # New
-    settlements = relationship("Settlement", back_populates="group") # New
+    expenses = relationship("GroupExpense", back_populates="group")
+    settlements = relationship("Settlement", back_populates="group")
 
-class ExpenseShare(Base):
-    __tablename__ = "expense_shares"
+
+class GroupExpense(Base):
+    __tablename__ = "group_expenses"
 
     id = Column(Integer, primary_key=True, index=True)
-    expense_id = Column(Integer, ForeignKey("expenses.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False) # The user who owes this share
-    share_amount = Column(Float, nullable=False)
+    description = Column(String(255), index=True)
+    amount = Column(Float, nullable=False)
+    date = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    group_id = Column(Integer, ForeignKey("groups.id", ondelete="SET NULL"), nullable=True) # Matches SQL ON DELETE SET NULL
+    paid_by_user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    expense = relationship("Expense", back_populates="expense_shares")
+    # Relationships
+    group = relationship("Group", back_populates="expenses")
+    payer = relationship("User", back_populates="paid_expenses", foreign_keys="[GroupExpense.paid_by_user_id]")
+    expense_shares = relationship("GroupExpenseShare", back_populates="expense", cascade="all, delete-orphan")
+
+
+class GroupExpenseShare(Base):
+    __tablename__ = "group_expense_shares" # Matches SQL table name
+
+    id = Column(Integer, primary_key=True, index=True)
+    expense_id = Column(Integer, ForeignKey("group_expenses.id", ondelete="CASCADE"), nullable=False) # Matches SQL FK
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    share_amount = Column(Float, nullable=False)
+    is_paid = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    __table_args__ = (UniqueConstraint("expense_id", "user_id"),) # Matches SQL UNIQUE constraint
+
+    # Relationships
+    expense = relationship("GroupExpense", back_populates="expense_shares")
     user_owing = relationship("User", back_populates="expense_shares_owed")
+
 
 class Settlement(Base):
     __tablename__ = "settlements"
 
     id = Column(Integer, primary_key=True, index=True)
-    from_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    to_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    group_id = Column(Integer, ForeignKey("groups.id"), nullable=False)
+    payer_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False) # Matches SQL column name
+    receiver_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False) # Matches SQL column name
+    group_id = Column(Integer, ForeignKey("groups.id", ondelete="CASCADE"), nullable=False)
     amount = Column(Float, nullable=False)
     settled_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    from_user = relationship("User", back_populates="settlements_made", foreign_keys="[Settlement.from_user_id]")
-    to_user = relationship("User", back_populates="settlements_received", foreign_keys="[Settlement.to_user_id]")
+    # Relationships (Updated to match SQL column names)
+    payer = relationship("User", back_populates="settlements_made", foreign_keys="[Settlement.payer_id]")
+    receiver = relationship("User", back_populates="settlements_received", foreign_keys="[Settlement.receiver_id]")
     group = relationship("Group", back_populates="settlements")

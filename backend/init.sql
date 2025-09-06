@@ -45,17 +45,13 @@ CREATE TABLE IF NOT EXISTS groups (
 CREATE TABLE IF NOT EXISTS expenses (
     id SERIAL PRIMARY KEY,
     description VARCHAR(255),
-    amount FLOAT NOT NULL,
+    amount NUMERIC(10, 2) NOT NULL,
     date TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
     category expensecategory DEFAULT 'Other' NOT NULL,
     owner_id INTEGER NOT NULL,
-    group_id INTEGER, -- NEW: Links to a group if it's a shared expense (NULL if personal)
-    paid_by_user_id INTEGER NOT NULL, -- NEW: The user who actually paid the full amount
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE,
-    FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE SET NULL, -- Use SET NULL if group deleted
-    FOREIGN KEY (paid_by_user_id) REFERENCES users (id) ON DELETE CASCADE
+    FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 -- Create budgets table
@@ -63,12 +59,25 @@ CREATE TABLE IF NOT EXISTS budgets (
     id SERIAL PRIMARY KEY,
     month INTEGER NOT NULL,
     year INTEGER NOT NULL,
-    amount FLOAT NOT NULL,
+    amount NUMERIC(10, 2) NOT NULL,
     owner_id INTEGER NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE,
     UNIQUE (owner_id, month, year) -- Ensure only one budget per user per month/year
+);
+
+CREATE TABLE IF NOT EXISTS group_expenses (
+    id SERIAL PRIMARY KEY,
+    description VARCHAR(255),
+    amount NUMERIC(10, 2) NOT NULL,
+    date TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    group_id INTEGER, -- NEW: Links to a group if it's a shared expense (NULL if personal)
+    paid_by_user_id INTEGER NOT NULL, -- NEW: The user who actually paid the full amount
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE SET NULL, -- Use SET NULL if group deleted
+    FOREIGN KEY (paid_by_user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 
@@ -83,14 +92,15 @@ CREATE TABLE IF NOT EXISTS group_members (
 );
 
 -- New table: expense_shares (for splitting group expenses)
-CREATE TABLE IF NOT EXISTS expense_shares (
+CREATE TABLE IF NOT EXISTS group_expense_shares (
     id SERIAL PRIMARY KEY,
     expense_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL, -- The user who owes/is responsible for this share
-    share_amount FLOAT NOT NULL,
+    share_amount NUMERIC(10, 2) NOT NULL,
+    is_paid BOOLEAN DEFAULT FALSE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (expense_id) REFERENCES expenses (id) ON DELETE CASCADE,
+    FOREIGN KEY (expense_id) REFERENCES group_expenses (id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     UNIQUE (expense_id, user_id) -- A user should have only one share per expense
 );
@@ -98,12 +108,12 @@ CREATE TABLE IF NOT EXISTS expense_shares (
 -- New table: settlements (for recording payments between users)
 CREATE TABLE IF NOT EXISTS settlements (
     id SERIAL PRIMARY KEY,
-    from_user_id INTEGER NOT NULL, -- The user who made the payment
-    to_user_id INTEGER NOT NULL,   -- The user who received the payment
+    payer_id INTEGER NOT NULL, -- The user who made the payment
+    receiver_id INTEGER NOT NULL,   -- The user who received the payment
     group_id INTEGER NOT NULL,     -- The group within which the settlement occurred
-    amount FLOAT NOT NULL,
+    amount NUMERIC(10, 2) NOT NULL,
     settled_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (from_user_id) REFERENCES users (id) ON DELETE CASCADE,
-    FOREIGN KEY (to_user_id) REFERENCES users (id) ON DELETE CASCADE,
+    FOREIGN KEY (payer_id) REFERENCES users (id) ON DELETE CASCADE,
+    FOREIGN KEY (receiver_id) REFERENCES users (id) ON DELETE CASCADE,
     FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE
 );

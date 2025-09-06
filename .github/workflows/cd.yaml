@@ -41,6 +41,13 @@ jobs:
             ACCESS_TOKEN_EXPIRE_MINUTES=${{ vars.ACCESS_TOKEN_EXPIRE_MINUTES }}
             GCP_HOST=${{secrets.GCP_HOST}}
             CORS_ORIGIN=http://${{ secrets.GCP_HOST }}:${{ vars.FRONTEND_PORT }}
+            VITE_API_BASE_URL=http://${{ secrets.GCP_HOST }}:${{ vars.BACKEND_PORT }}/${{ vars.API_V1_STR }}
+            EOL
+
+            cd /home/${{ secrets.GCP_USER }}/expense-tracker/frontend
+
+            cat > .env <<EOL
+            VITE_API_BASE_URL=http://${{ secrets.GCP_HOST }}:${{ vars.BACKEND_PORT }}/${{ vars.API_V1_STR }}
             EOL
 
             # ✅ Log in to Docker Hub (required for private OR rate-limited pulls)

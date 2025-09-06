@@ -24,3 +24,12 @@ class UserResponse(UserBase):
 
     class Config:
         from_attributes = True
+
+class UserSearchResponse(BaseModel):
+    """
+    Pydantic schema for the user search response.
+    """
+    email: str
+
+    class Config:
+        orm_mode = True

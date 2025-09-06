@@ -2,24 +2,16 @@
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, extract
 from app.db.models import Expense, User, ExpenseCategory, Group # Import Group model
-from app.schemas.expense import ExpenseCreate, ExpenseUpdate
+from app.schemas.expense import ExpenseBase, ExpenseUpdate
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from app.db import crud # Import crud
 from app.core.exceptions import ExpenseNotFoundException
 
-def create_user_expense(db: Session, expense: ExpenseCreate, user_id: int):
+def create_user_expense(db: Session, expense: ExpenseBase, user_id: int):
     """Creates a new expense for a given user."""
     expense_in_db = expense.model_dump()
     expense_in_db["owner_id"] = user_id
-
-    # If paid_by_user_id is not provided, default it to the owner_id
-    if expense_in_db.get("paid_by_user_id") is None:
-        expense_in_db["paid_by_user_id"] = user_id
-
-    # Ensure expense_shares is an empty list if None, as SQLAlchemy expects a list-like collection
-    if expense_in_db.get("expense_shares") is None:
-        expense_in_db["expense_shares"] = []
 
     db_expense = crud.create_item(db, Expense, expense_in_db)
     return db_expense
@@ -31,23 +23,13 @@ def get_user_expenses(
     limit: int = 100,
     start_date: datetime | None = None,
     end_date: datetime | None = None,
-    category: ExpenseCategory | None = None,
-    group_id: int | None = None # Added group_id parameter
+    category: ExpenseCategory | None = None
 ) -> List[Expense]:
     """Retrieves expenses for a user with optional filters."""
     # Start with a base query for Expense
     query = db.query(Expense)
 
-    # If group_id is provided, filter by group_id and ensure the user is part of that group
-    if group_id:
-        # Corrected join: Join Expense to Group, then Group to its members
-        query = query.join(Expense.group).join(Group.members).filter( # <--- CORRECTED LINE
-            Expense.group_id == group_id,
-            User.id == user_id # Ensure the authenticated user is a member of the group
-        )
-    else:
-        # If no group_id, filter by owner_id (personal expenses)
-        query = query.filter(Expense.owner_id == user_id)
+    query = query.filter(Expense.owner_id == user_id)
 
     if start_date:
         query = query.filter(Expense.date >= start_date)
@@ -55,9 +37,6 @@ def get_user_expenses(
         query = query.filter(Expense.date <= end_date)
     if category:
         query = query.filter(Expense.category == category)
-    
-    # Eager load related data for response
-    query = query.options(joinedload(Expense.payer), joinedload(Expense.expense_shares))
 
     return query.offset(skip).limit(limit).all()
 

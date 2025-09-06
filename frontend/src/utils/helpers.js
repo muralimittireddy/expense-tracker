@@ -12,5 +12,4 @@ export const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString(undefined, options);
 };
 
-// You can add more helper functions here as needed
-// e.g., for form validation, data transformation, etc.
+

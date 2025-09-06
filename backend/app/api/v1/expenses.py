@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime
 from app.db.database import get_db
-from app.schemas.expense import ExpenseCreate, ExpenseUpdate, ExpenseResponse
+from app.schemas.expense import ExpenseBase, ExpenseUpdate, ExpenseResponse
 from app.services import expense_service
 from app.db.models import ExpenseCategory
 from app.api.deps import get_current_user # Dependency to get authenticated user
@@ -14,7 +14,7 @@ router = APIRouter()
 
 @router.post("/", response_model=ExpenseResponse, status_code=status.HTTP_201_CREATED)
 def create_expense(
-    expense: ExpenseCreate,
+    expense: ExpenseBase,
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -31,8 +31,7 @@ def read_expenses(
     limit: int = 100,
     start_date: datetime | None = Query(None, description="Filter expenses from this date (YYYY-MM-DD)"),
     end_date: datetime | None = Query(None, description="Filter expenses up to this date (YYYY-MM-DD)"),
-    category: ExpenseCategory | None = Query(None, description="Filter expenses by category"),
-    group_id: int | None = Query(None, description="Filter expenses by group ID") # NEW: Added group_id query parameter
+    category: ExpenseCategory | None = Query(None, description="Filter expenses by category") # NEW: Added group_id query parameter
 ):
     """
     Retrieve expenses for the authenticated user with optional filters.
@@ -45,7 +44,6 @@ def read_expenses(
         start_date=start_date,
         end_date=end_date,
         category=category,
-        group_id=group_id # NEW: Pass group_id to service
     )
     return expenses
 

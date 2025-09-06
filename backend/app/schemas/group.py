@@ -1,5 +1,5 @@
 # backend/app/schemas/group.py
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional
 from datetime import datetime
 
@@ -17,7 +17,7 @@ class GroupBase(BaseModel):
     description: Optional[str] = None # NEW: Optional description
 
 class GroupCreate(GroupBase):
-    pass
+    members: List[EmailStr] = []
 
 class GroupResponse(GroupBase):
     id: int
@@ -28,15 +28,15 @@ class GroupResponse(GroupBase):
 
     class Config:
         from_attributes = True
-# NEW: Schema for individual balance within a group
-class UserBalance(BaseModel):
-    user_id: int
-    username: str
-    net_balance: float
+# # NEW: Schema for individual balance within a group
+# class UserBalance(BaseModel):
+#     user_id: int
+#     username: str
+#     net_balance: float
 
-# NEW: Schema for the overall balances response
-class GroupBalancesResponse(BaseModel):
-    group_id: int
-    total_owed_by_you: float
-    total_owed_to_you: float
-    individual_balances: List[UserBalance]
+# # NEW: Schema for the overall balances response
+# class GroupBalancesResponse(BaseModel):
+#     group_id: int
+#     total_owed_by_you: float
+#     total_owed_to_you: float
+#     individual_balances: List[UserBalance]

@@ -8,3 +8,5 @@ passlib[bcrypt]==1.7.4
 pydantic-settings==2.3.3 # For BaseSettings
 python-multipart==0.0.9 # For OAuth2PasswordRequestForm
 python-dotenv==1.0.1
+websockets
+python-multipart
