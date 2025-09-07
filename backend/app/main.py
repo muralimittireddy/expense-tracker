@@ -22,7 +22,7 @@ vm_ip = os.getenv("CORS_ORIGIN")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    openapi_url=f"/{settings.API_V1_STR}/openapi.json",
+    openapi_url=f"{settings.API_V1_STR}/openapi.json",
 )
 
 # Set up CORS middleware
@@ -32,9 +32,8 @@ origins = [
     "http://localhost",
     "http://localhost:8000",
     "http://localhost:5173",  # React frontend development server
-    "http://localhost:80"    # Nginx default port
-    
-    # "http://34.172.240.198:8000"
+    "http://localhost:80" ,   # Nginx default port
+    "http://34.172.240.198:5173"
 ]
 
 app.add_middleware(
@@ -45,7 +44,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(api_router, prefix=f"/{settings.API_V1_STR}")
+app.include_router(api_router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def read_root():
