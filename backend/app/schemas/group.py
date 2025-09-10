@@ -19,6 +19,18 @@ class GroupBase(BaseModel):
 class GroupCreate(GroupBase):
     members: List[EmailStr] = []
 
+class AddGroupMember(BaseModel):
+    id: int
+    email: EmailStr
+
+class GroupId(BaseModel):
+    id: int
+
+class GroupDetailResponse(BaseModel):
+    name: str
+    description: Optional[str] = None
+    usernames: List[str]
+
 class GroupResponse(GroupBase):
     id: int
     created_by_user_id: int

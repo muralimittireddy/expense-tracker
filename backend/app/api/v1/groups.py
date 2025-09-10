@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.db.database import get_db
-from app.schemas.group import GroupResponse ,GroupCreate #  GroupBalancesResponse # Import GroupBalancesResponse
+from app.schemas.group import GroupResponse ,GroupCreate, AddGroupMember, GroupId, GroupDetailResponse #  GroupBalancesResponse # Import GroupBalancesResponse
 from app.services import group_service
 from app.api.deps import get_current_user # Dependency to get authenticated user
 from app.core.exceptions import GroupNotFoundException # Import custom exception
@@ -32,6 +32,30 @@ def read_groups(
     """
     groups = group_service.get_user_groups(db=db, user_id=current_user["id"])
     return groups
+
+@router.post("/addMember",response_model=GroupResponse)
+def add_member(
+    member: AddGroupMember,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Add group member to existing group
+    """
+    return group_service.add_group_member(db=db,addMember=member, user_id=current_user["id"])
+
+@router.get("/getGroupDetail/{groupId}",response_model=GroupDetailResponse)
+def get_group_detail(
+    groupId:int,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get Specific group details with group members names
+    """
+
+    return group_service.get_group_detail(db=db,id=groupId, user_id=current_user["id"])
+
 
 # @router.get("/{group_id}", response_model=GroupResponse)
 # def read_group(

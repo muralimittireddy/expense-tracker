@@ -1,10 +1,14 @@
 # # backend/app/services/group_service.py
+from fastapi import status, HTTPException
+# from http.client import HTTPException
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, or_
 from app.db.models import Group, User, Expense, Settlement, group_members_association_table
-from app.schemas.group import GroupCreate
+from app.schemas.group import GroupCreate,AddGroupMember,GroupId,GroupDetailResponse
 from typing import List, Optional, Dict, Any
 from app.core.exceptions import GroupNotFoundException
+from app.services import user
+from app.services import group as group_1
 from app.db import crud # Import crud functions
 
 def create_group(db: Session, group_in: GroupCreate, user_id: int) -> Group:
@@ -53,6 +57,66 @@ def get_user_groups(db: Session, user_id: int) -> List[Group]:
     ).all()
     
     return all_groups
+
+def add_group_member(db:Session, addMember:AddGroupMember,user_id: int ) -> Group:
+    """
+    Add member to group
+    """
+    # 1. Find the group by ID
+    group = group_1.get_group_by_id(db, addMember.id)
+    if not group:
+        # A custom exception is better than raising HTTPException directly in a service
+        raise GroupNotFoundException()
+
+    # 2. Check if the current user has permission to add members
+    # You can decide on the policy (e.g., only creator, or any member)
+    # The current logic allows any member to add
+    current_user = user.get_user_by_id(db, user_id)
+    if current_user not in group.members:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to add members to this group."
+        )
+
+    # 3. Find the user to be added by email
+    user_to_add = user.get_user_by_email(db, addMember.email)
+    if not user_to_add:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User with this email not found."
+        )
+
+    # 4. Check if the user is already a member of the group
+    if user_to_add in group.members:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This user is already a member of the group."
+        )
+
+    # 5. Add the user to the group's members list and save
+    group.members.append(user_to_add)
+    db.commit()
+    db.refresh(group)
+    return group
+
+def get_group_detail(db:Session,id: int,user_id: int) -> GroupDetailResponse:
+    """
+    Gets the specific group and usernames of group members
+    """
+    group = db.query(Group).filter(Group.id == id).first()
+
+    if not group:
+        raise ValueError(f"Group with id {id} not found")
+
+    # Collect member usernames
+    member_usernames = [member.username for member in group.members]
+
+    # Return using your schema
+    return GroupDetailResponse(
+        name=group.name,
+        description=group.description or "",
+        usernames=member_usernames
+    )
 
 # def get_user_group_by_id(db: Session, group_id: int, user_id: int) -> Optional[Group]:
 #     """

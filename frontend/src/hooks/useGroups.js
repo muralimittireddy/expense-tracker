@@ -6,6 +6,7 @@ export const useGroups = (isAuthenticated) => {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [groupDetails,setGroupDetails]=useState(null);
 
   const fetchGroups = async () => {
     if (!isAuthenticated) {
@@ -34,9 +35,20 @@ export const useGroups = (isAuthenticated) => {
     }
   };
 
+  const fetchGroup = async (groupId) =>
+  {
+    try{
+      const response=await axiosInstance.get(`/splits/groups/getGroupDetail/${groupId}`);
+      setGroupDetails(response.data);
+    } catch(err){
+      throw new Error(err.response?.data || "Failed to get group detail");
+    }
+
+  };
+
   useEffect(() => {
     fetchGroups();
   }, [isAuthenticated]);
 
-  return { groups, loading, error, addGroup, fetchGroups };
+  return { groups, loading, error,groupDetails, addGroup, fetchGroups ,fetchGroup};
 };
