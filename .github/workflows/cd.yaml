@@ -49,6 +49,10 @@ jobs:
             VITE_API_BASE_URL=http://${{ secrets.GCP_HOST }}:${{ vars.BACKEND_PORT }}${{ vars.API_V1_STR }}
             EOL
 
+            docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/expensetracker-frontend:latest .
+            docker push ${{ secrets.DOCKER_HUB_USERNAME }}/expensetracker-frontend:latest
+
+
             cd /home/${{ secrets.GCP_USER }}/expense-tracker
 
             # ✅ Log in to Docker Hub (required for private OR rate-limited pulls)
