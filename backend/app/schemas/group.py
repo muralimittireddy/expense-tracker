@@ -26,6 +26,12 @@ class AddGroupMember(BaseModel):
 class GroupId(BaseModel):
     id: int
 
+class LeaveGroupResponse(BaseModel):
+    group_id: int
+    message: str
+    remaining_members: List[str]
+    new_admin: Optional[str] = None
+
 class GroupDetailResponse(BaseModel):
     name: str
     description: Optional[str] = None

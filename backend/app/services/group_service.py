@@ -4,7 +4,7 @@ from fastapi import status, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, or_
 from app.db.models import Group, User, Expense, Settlement, group_members_association_table
-from app.schemas.group import GroupCreate,AddGroupMember,GroupId,GroupDetailResponse
+from app.schemas.group import GroupCreate,AddGroupMember,GroupId,GroupDetailResponse,LeaveGroupResponse
 from typing import List, Optional, Dict, Any
 from app.core.exceptions import GroupNotFoundException
 from app.services import user
@@ -116,6 +116,64 @@ def get_group_detail(db:Session,id: int,user_id: int) -> GroupDetailResponse:
         name=group.name,
         description=group.description or "",
         usernames=member_usernames
+    )
+
+
+def leave_group(db: Session, group_id: int, user_id: int) -> LeaveGroupResponse:
+    """
+    Allow a user to leave a group. If the admin leaves, assign new admin.
+    """
+    group = db.query(Group).filter(Group.id == group_id).first()
+
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+
+    user_to_remove = user.get_user_by_id(db, user_id)
+    if user_to_remove not in group.members:
+        raise HTTPException(status_code=400, detail="You are not a member of this group")
+
+    # Case 1: User is the only member
+    if len(group.members) == 1:
+        db.delete(group)
+        db.commit()
+        return LeaveGroupResponse(
+            group_id=group.id,
+            message="You left the group. Since you were the only member, the group has been deleted.",
+            remaining_members=[],
+            new_admin=None
+        )
+    # Case 2: Normal member leaving
+    if group.created_by_user_id != user_id:
+        group.members.remove(user_to_remove)
+        db.commit()
+        db.refresh(group)
+        return LeaveGroupResponse(
+            group_id=group.id,
+            message="You left the group.",
+            remaining_members=[m.username for m in group.members],
+            new_admin=None
+        )
+
+    # Case 3: Admin leaving → assign new admin
+    new_admin_username = None
+    if group.created_by_user_id == user_id:
+        # Pick the first remaining member as new admin
+        for m in group.members:
+            if m.id != user_id:
+                group.created_by_user_id = m.id
+                new_admin_username = m.username
+                break
+
+    # Remove user from group
+    group.members.remove(user_to_remove)
+    db.commit()
+    db.refresh(group)
+
+    return LeaveGroupResponse(
+        group_id=group.id,
+        message="You have left the group." + (f" Admin rights transferred to {new_admin_username}." if new_admin_username else ""),
+        remaining_members=[m.username for m in group.members],
+        new_admin=new_admin_username
     )
 
 # def get_user_group_by_id(db: Session, group_id: int, user_id: int) -> Optional[Group]:

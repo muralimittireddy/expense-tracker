@@ -32,9 +32,25 @@ function OptionsMenu({toggleOptionsMenu,groupId,groupDetails})
       console.error('Failed to add member:', error.response.data.detail);
       setMessage(`Error: ${error.response.data.detail}`);
     }
+  };
 
+  // Leave group handler
+  const handleLeaveGroup = async () => {
+    setMessage("");
 
-  }
+    try {
+      const response = await axiosInstance.delete(`/splits/groups/leaveGroup/${groupId}`);
+
+      console.log("Left group successfully:", response.data);
+      setMessage(response.data.message);
+
+      // Optionally: close menu or redirect user if they are no longer in the group
+      toggleOptionsMenu();
+    } catch (error) {
+      console.error("Failed to leave group:", error.response?.data?.detail);
+      setMessage(`Error: ${error.response?.data?.detail}`);
+    }
+  };
 
     return (
         <div className="absolute top-full right-0 mt-4 w-72 bg-white rounded-lg shadow-xl z-10 p-4 border border-gray-200">
@@ -74,7 +90,9 @@ function OptionsMenu({toggleOptionsMenu,groupId,groupDetails})
             </li>
           </>
         )}
-        <li className="p-2 hover:bg-gray-100 rounded-md cursor-pointer transition-colors text-red-500">Leave Group</li>
+        <li className="p-2 hover:bg-gray-100 rounded-md cursor-pointer transition-colors text-red-500"
+        onClick={handleLeaveGroup}
+        >Leave Group</li>
         <li className="pt-2">
           <p className="font-bold text-sm text-gray-500 mb-1">Group Members</p>
           <ul className="space-y-1">
