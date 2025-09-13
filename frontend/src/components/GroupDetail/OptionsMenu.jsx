@@ -96,9 +96,9 @@ function OptionsMenu({toggleOptionsMenu,groupId,groupDetails})
         <li className="pt-2">
           <p className="font-bold text-sm text-gray-500 mb-1">Group Members</p>
           <ul className="space-y-1">
-            {groupDetails?.usernames?.map((username, index) => (
+            {groupDetails?.users?.map((user, index) => (
               <li key={index} className="text-gray-700">
-                {username}
+                {user.username}
               </li>
             ))}
         </ul>

@@ -35,7 +35,7 @@ class LeaveGroupResponse(BaseModel):
 class GroupDetailResponse(BaseModel):
     name: str
     description: Optional[str] = None
-    usernames: List[str]
+    users: List[GroupMemberResponse]
 
 class GroupResponse(GroupBase):
     id: int

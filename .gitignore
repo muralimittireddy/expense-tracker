@@ -1,8 +1,10 @@
-# Environment variables file
+# Environment variables
 .env
 
-# Pyhton dependencies (if you're not using a specific virtual environment)
-\backend\app\__pycache__
-
+# Python cache
 __pycache__/
 *.pyc
+backend/app/__pycache__/
+
+# Node modules
+frontend/node_modules/

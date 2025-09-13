@@ -109,13 +109,13 @@ def get_group_detail(db:Session,id: int,user_id: int) -> GroupDetailResponse:
         raise ValueError(f"Group with id {id} not found")
 
     # Collect member usernames
-    member_usernames = [member.username for member in group.members]
+    members = [member for member in group.members]
 
     # Return using your schema
     return GroupDetailResponse(
         name=group.name,
         description=group.description or "",
-        usernames=member_usernames
+        users=members
     )
 
 
