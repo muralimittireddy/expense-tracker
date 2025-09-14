@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
+import axiosInstance from "../../api/axiosInstance";
 
 // The SplitExpenseModal component handles the multi-step form for splitting an expense.
-function SplitExpenseModal({ onClose , groupDetails}) {
+function SplitExpenseModal({ onClose , groupDetails, group}) {
   // State management for the modal's steps and data.
   const [step, setStep] = useState(1);
   const [amount, setAmount] = useState("");
@@ -12,11 +13,8 @@ function SplitExpenseModal({ onClose , groupDetails}) {
   console.log(groupDetails);
 
   // Mock member data. In a real application, this would be fetched from a backend.
-  const members = [
-    { id: "1", name: "Alice" },
-    { id: "2", name: "Bob" },
-    { id: "3", name: "Charlie" },
-  ];
+  const members = groupDetails.users;
+  const  groupId=group.id;
 
   // Effect hook to automatically calculate and set initial splits when the split method or members change.
   useEffect(() => {
@@ -183,7 +181,7 @@ function SplitExpenseModal({ onClose , groupDetails}) {
                   selectedMembers.includes(m.id) ? "bg-blue-200" : ""
                 }`}
               >
-                {m.name}
+                {m.username}
               </button>
             ))}
             <div className="flex justify-between mt-4">
@@ -281,16 +279,35 @@ function SplitExpenseModal({ onClose , groupDetails}) {
                 Back
               </button>
               <button
-                onClick={() => {
+                onClick={async () => {
                   const shares = calculateShares();
+                  const payload = {
+                                    description,
+                                    amount: parseFloat(amount),
+                                    selectedMembers,
+                                    splitMethod,
+                                    shares,
+                                  };
                   console.log({
+                    groupId,
                     description,
                     amount,
                     selectedMembers,
                     splitMethod,
                     shares,
                   });
-                  // TODO: In a real app, this is where you'd call a backend API.
+                  try {
+                    const response = await axiosInstance.post(
+                      `/splits/groups/${groupId}/expenses`,
+                      payload
+                    );
+
+                    // ✅ Axios automatically parses JSON
+                    console.log("✅ Expense created:", response.data);
+                  } catch (err) {
+                    console.error("❌ Failed to create expense", err);
+                  }
+                  
                   onClose();
                 }}
                 disabled={!splitMethod || selectedMembers.length === 0}

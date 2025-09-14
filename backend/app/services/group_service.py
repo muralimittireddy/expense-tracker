@@ -3,13 +3,15 @@ from fastapi import status, HTTPException
 # from http.client import HTTPException
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, or_
-from app.db.models import Group, User, Expense, Settlement, group_members_association_table
-from app.schemas.group import GroupCreate,AddGroupMember,GroupId,GroupDetailResponse,LeaveGroupResponse
+from app.db.models import Group, User, Expense, Settlement, group_members_association_table,GroupExpense, GroupExpenseShare
+from app.schemas.group import GroupCreate,AddGroupMember,GroupDetailResponse,LeaveGroupResponse, GroupExpenseCreate, GroupExpenseResponse, ShareResponse, GroupExpenseListResponse
 from typing import List, Optional, Dict, Any
 from app.core.exceptions import GroupNotFoundException
 from app.services import user
 from app.services import group as group_1
 from app.db import crud # Import crud functions
+from app.api.v1.splits_ws import manager
+import asyncio
 
 def create_group(db: Session, group_in: GroupCreate, user_id: int) -> Group:
     """
@@ -43,6 +45,51 @@ def create_group(db: Session, group_in: GroupCreate, user_id: int) -> Group:
     db.refresh(db_group)
     
     return db_group
+
+
+def create_group_expense(db: Session, group_id: int, expense_in: GroupExpenseCreate, user_id: int) -> GroupExpenseResponse:
+    # Step 1: insert group_expenses row
+    new_expense = GroupExpense(
+        description=expense_in.description,
+        amount=expense_in.amount,
+        group_id=group_id,
+        paid_by_user_id=user_id  # ✅ authenticated user who paid
+    )
+    db.add(new_expense)
+    db.flush()  # to get new_expense.id before inserting shares
+
+    # Step 2: insert expense shares
+    for share in expense_in.shares:
+        db.add(GroupExpenseShare(
+            expense_id=new_expense.id,
+            user_id=share.user_id,
+            share_amount=share.share_amount
+        ))
+
+    db.commit()
+    db.refresh(new_expense)
+
+    # Step 3: return response
+    return GroupExpenseResponse(
+        id=new_expense.id,
+        description=new_expense.description,
+        amount=new_expense.amount,
+        group_id=new_expense.group_id,
+        paid_by_user_id=new_expense.paid_by_user_id,
+        created_at=new_expense.created_at,
+        shares=expense_in.shares
+    )
+
+def get_list_group_expenses(group_id:int , db:Session, user_id:int)-> List[GroupExpenseListResponse]:
+    expenses = (
+        db.query(GroupExpense)
+        .options(joinedload(GroupExpense.expense_shares))  # fetch related
+        .filter(GroupExpense.group_id == group_id)
+        .order_by(GroupExpense.created_at.asc())
+        .all()
+    )
+    return expenses
+
 
 def get_user_groups(db: Session, user_id: int) -> List[Group]:
     """

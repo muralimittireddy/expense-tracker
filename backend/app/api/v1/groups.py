@@ -3,10 +3,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 from app.db.database import get_db
-from app.schemas.group import GroupResponse ,GroupCreate, AddGroupMember, GroupDetailResponse ,LeaveGroupResponse #  GroupBalancesResponse # Import GroupBalancesResponse
+from app.schemas.group import GroupResponse ,GroupCreate, AddGroupMember, GroupExpenseListResponse,GroupDetailResponse ,LeaveGroupResponse ,GroupExpenseResponse, GroupExpenseCreate #  GroupBalancesResponse # Import GroupBalancesResponse
 from app.services import group_service
 from app.api.deps import get_current_user # Dependency to get authenticated user
 from app.core.exceptions import GroupNotFoundException # Import custom exception
+from app.api.v1.splits_ws import manager
 
 router = APIRouter()
 
@@ -21,6 +22,42 @@ def create_group(
     The creator will automatically be added as a member.
     """
     return group_service.create_group(db=db, group_in=group, user_id=current_user["id"])
+
+@router.post("/{group_id}/expenses", response_model=GroupExpenseResponse, status_code=status.HTTP_201_CREATED)
+def create_group_expense(
+    group_id: int,
+    expense: GroupExpenseCreate,
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Create a new expense in a group.
+    The logged-in user is set as the one who paid.
+    """
+    expense_obj = group_service.create_group_expense(
+        db, group_id, expense, current_user["id"]
+    )
+
+    # # WebSocket broadcast here
+    # await manager.broadcast(group_id, {
+    #     "event": "NEW_EXPENSE",
+    #     "expense": expense_obj.dict()
+    # })
+
+    return expense_obj
+
+
+@router.get("/{group_id}/expenses", response_model=List[GroupExpenseListResponse])
+def list_group_expenses(
+    group_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    returns all the group expeses till date
+    """
+
+    return group_service.get_list_group_expenses( group_id=group_id ,db=db, user_id=current_user["id"])
 
 @router.get("/", response_model=List[GroupResponse])
 def read_groups(

@@ -46,6 +46,53 @@ class GroupResponse(GroupBase):
 
     class Config:
         from_attributes = True
+
+class ShareResponse(BaseModel):
+    user_id: int
+    share_amount: float
+    is_paid: bool
+
+    class Config:
+        from_attributes = True
+
+
+class GroupExpenseListResponse(BaseModel):
+    id: int
+    description: str
+    amount: float
+    group_id: int
+    paid_by_user_id: int
+    created_at: datetime
+    expense_shares: List[ShareResponse] = []   # match ORM name
+
+    class Config:
+        from_attributes = True
+
+
+class Share(BaseModel):
+    user_id: int
+    share_amount: float
+
+class GroupExpenseCreate(BaseModel):
+    description: str
+    amount: float
+    selectedMembers: List[int]
+    splitMethod: str
+    shares: List[Share]
+
+class GroupExpenseResponse(BaseModel):
+    id: int
+    description: str
+    amount: float
+    group_id: int
+    paid_by_user_id: int
+    created_at: datetime
+    shares: List[Share]
+
+    class Config:
+        from_attributes = True
+
+
 # # NEW: Schema for individual balance within a group
 # class UserBalance(BaseModel):
 #     user_id: int
