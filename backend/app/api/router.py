@@ -11,4 +11,4 @@ api_router.include_router(analytics.router, prefix="/analytics", tags=["analytic
 api_router.include_router(groups.router, prefix="/splits/groups", tags=["splits_groups"]) # Include groups router
 api_router.include_router(users.router, prefix="/users", tags=["users"]) # Include users router
 
-api_router.include_router(splits_ws.router, prefix="/ws/groups", tags=["websockets"])
+api_router.include_router(splits_ws.router) # Mount the router

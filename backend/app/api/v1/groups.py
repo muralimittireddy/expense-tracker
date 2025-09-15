@@ -1,6 +1,7 @@
 # # backend/app/api/v1/groups.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from fastapi.encoders import jsonable_encoder
 from typing import List
 from app.db.database import get_db
 from app.schemas.group import GroupResponse ,GroupCreate, AddGroupMember, GroupExpenseListResponse,GroupDetailResponse ,LeaveGroupResponse ,GroupExpenseResponse, GroupExpenseCreate #  GroupBalancesResponse # Import GroupBalancesResponse
@@ -24,7 +25,7 @@ def create_group(
     return group_service.create_group(db=db, group_in=group, user_id=current_user["id"])
 
 @router.post("/{group_id}/expenses", response_model=GroupExpenseResponse, status_code=status.HTTP_201_CREATED)
-def create_group_expense(
+async def create_group_expense(
     group_id: int,
     expense: GroupExpenseCreate,
     current_user: dict = Depends(get_current_user),
@@ -34,9 +35,33 @@ def create_group_expense(
     Create a new expense in a group.
     The logged-in user is set as the one who paid.
     """
+    # This service call is synchronous. FastAPI runs it in a separate threadpool
+    # without blocking the event loop.
     expense_obj = group_service.create_group_expense(
         db, group_id, expense, current_user["id"]
     )
+
+    # WebSocket broadcast here
+    # Use jsonable_encoder to ensure the data is serializable before broadcasting
+    expense_data = jsonable_encoder(expense_obj)
+    await manager.broadcast(group_id, {
+        "event": "NEW_EXPENSE",
+        "expense": expense_data
+    })
+
+    return expense_obj
+
+    # # Convert Pydantic model to dict for JSON serialization
+    # # .model_dump() is for Pydantic v2, .dict() is for v1. This is for compatibility.
+    # expense_dict = expense_obj.model_dump() if hasattr(expense_obj, 'model_dump') else expense_obj.dict()
+
+    # # WebSocket broadcast to all members of the group
+    # await manager.broadcast(group_id, {
+    #     "event": "NEW_EXPENSE",
+    #     "expense": expense_dict
+    # })
+
+    # return expense_obj
 
     # # WebSocket broadcast here
     # await manager.broadcast(group_id, {
@@ -44,7 +69,7 @@ def create_group_expense(
     #     "expense": expense_obj.dict()
     # })
 
-    return expense_obj
+    # return expense_obj
 
 
 @router.get("/{group_id}/expenses", response_model=List[GroupExpenseListResponse])

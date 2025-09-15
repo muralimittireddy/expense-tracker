@@ -10,7 +10,7 @@ function SplitExpenseModal({ onClose , groupDetails, group}) {
   const [splitMethod, setSplitMethod] = useState("");
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [memberSplits, setMemberSplits] = useState({});
-  console.log(groupDetails);
+  // console.log(groupDetails);
 
   // Mock member data. In a real application, this would be fetched from a backend.
   const members = groupDetails.users;

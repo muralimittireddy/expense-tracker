@@ -33,20 +33,29 @@ function GroupDetailPage() {
     }
   };
 
-  //   useEffect(() => {
-  //   if (!groupId) return;
-  //   const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL
-  //   const ws = new WebSocket(`${WS_BASE_URL}/ws/groups/${groupId}`);
-
-  //   ws.onmessage = (event) => {
-  //     const data = JSON.parse(event.data);
-  //     if (data.event === "NEW_EXPENSE") {
-  //       setExpenses((prev) => [data.expense, ...prev]);
-  //     }
-  //   };
-
-  //   return () => ws.close();
-  // }, [groupId]);
+ // useEffect for WebSocket connection
+  useEffect(() => {
+    if (!groupId) return;
+    
+    // Using a hardcoded URL because import.meta.env is not available in all build environments.
+    // In a real production app, this URL should be configured properly.
+    const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL ;
+    const ws = new WebSocket(`${WS_BASE_URL}/ws/groups/${groupId}`);
+    // console.log(WS_BASE_URL);
+    ws.onopen = () => console.log(`✅ WebSocket connection established for group ${groupId}`);
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.event === "NEW_EXPENSE") {
+        console.log("📩 Received new expense via WebSocket:", data.expense);
+        const newExpense = { ...data.expense, expense_shares: data.expense.shares || [] };
+        setExpenses((prevExpenses) => [...prevExpenses, newExpense]);
+      }
+    };
+    ws.onclose = () => console.log("🔌 WebSocket connection closed.");
+    ws.onerror = (error) => console.error("❌ WebSocket error:", error);
+    
+    return () => ws.close();
+  }, [groupId]);
 
   if (!isAuthenticated) {
     return (

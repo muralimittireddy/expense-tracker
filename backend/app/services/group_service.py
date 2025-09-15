@@ -10,8 +10,7 @@ from app.core.exceptions import GroupNotFoundException
 from app.services import user
 from app.services import group as group_1
 from app.db import crud # Import crud functions
-from app.api.v1.splits_ws import manager
-import asyncio
+
 
 def create_group(db: Session, group_in: GroupCreate, user_id: int) -> Group:
     """
