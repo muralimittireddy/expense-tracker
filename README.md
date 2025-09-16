@@ -10,7 +10,8 @@ An all-in-one web application for personal finance management, designed to help 
 - **Dashboard**: Get a quick overview of your finances with monthly spending trends and spending breakdown by category.  
 - **Expense Management**: Log, view, edit, and delete personal and group expenses with filters by date range and category.  
 - **Budget Tracking**: Set a monthly budget and track spending against it.  
-- **Splits & Groups**: Create groups to manage shared expenses and calculate who owes whom.  
+- **Splits & Groups**: Create groups to manage shared expenses and calculate who owes whom.
+- **Real-time Updates**: Websocket support for real-time updates on group expenses.
 
 ---
 
