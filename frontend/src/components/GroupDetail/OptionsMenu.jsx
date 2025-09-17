@@ -1,111 +1,166 @@
-import React, {useState} from "react";
+import React, { useState, useEffect } from "react";
 import axiosInstance from "../../api/axiosInstance";
 
-function OptionsMenu({toggleOptionsMenu,groupId,groupDetails})
-{
-  const [email,setEmail]=useState('');
-  const [isAddingMember,setIsAddingMember]=useState(false);
-  const [message, setMessage] = useState('');
+function OptionsMenu({ toggleOptionsMenu, groupId, groupDetails }) {
+  const [email, setEmail] = useState("");
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [isAddingMember, setIsAddingMember] = useState(false);
+  const [message, setMessage] = useState("");
 
-  const handleAddMember = async() =>
-  {
-    setMessage('');
+  // 🔎 Fetch matching users when typing
+  useEffect(() => {
+    if (query.length >= 3) {
+      const fetchUsers = async () => {
+        try {
+          const res = await axiosInstance.get("/users/search", {
+            params: { email: query },
+          });
+          setResults(res.data);
+        } catch (err) {
+          console.error("Error searching users:", err);
+        }
+      };
+      fetchUsers();
+    } else {
+      setResults([]);
+    }
+  }, [query]);
 
+  // ✅ Add new member
+  const handleAddMember = async () => {
+    setMessage("");
     if (!email) {
-      setMessage('Please enter a valid email address.');
+      setMessage("Please enter a valid email address.");
       return;
     }
 
-     try {
-      const response = await axiosInstance.post(
-        `/splits/groups/addMember`, // Replace with your backend URL
-        { id:groupId,email: email }
-      );
-      
-      // 3. Handle success
-      console.log('Member added successfully:', response.data);
-      setMessage('Member added successfully!');
-      setEmail(''); // Clear the input field
+    try {
+      await axiosInstance.post(`/splits/groups/addMember`, {
+        id: groupId,
+        email,
+      });
+
+      setMessage("✅ Member added successfully!");
+      setEmail("");
+      setQuery("");
       setIsAddingMember(false);
+      setResults([]);
     } catch (error) {
-      // 4. Handle errors
-      console.error('Failed to add member:', error.response.data.detail);
-      setMessage(`Error: ${error.response.data.detail}`);
+      setMessage(`Error: ${error.response?.data?.detail || "Failed to add"}`);
     }
   };
 
-  // Leave group handler
+  // 🚪 Leave group
   const handleLeaveGroup = async () => {
     setMessage("");
-
     try {
-      const response = await axiosInstance.delete(`/splits/groups/leaveGroup/${groupId}`);
-
-      console.log("Left group successfully:", response.data);
+      const response = await axiosInstance.delete(
+        `/splits/groups/leaveGroup/${groupId}`
+      );
       setMessage(response.data.message);
-
-      // Optionally: close menu or redirect user if they are no longer in the group
       toggleOptionsMenu();
     } catch (error) {
-      console.error("Failed to leave group:", error.response?.data?.detail);
-      setMessage(`Error: ${error.response?.data?.detail}`);
+      setMessage(`Error: ${error.response?.data?.detail || "Failed to leave"}`);
     }
   };
 
-    return (
-        <div className="absolute top-full right-0 mt-4 w-72 bg-white rounded-lg shadow-xl z-10 p-4 border border-gray-200">
+  return (
+    <div className="w-96 bg-white rounded-lg shadow-xl p-6 relative">
       {/* Close button */}
-      <div className="flex justify-end">
-        <button onClick={toggleOptionsMenu} className="text-gray-400 hover:text-gray-600 transition-colors">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-          </svg>
-        </button>
-      </div>
+      <button
+        onClick={toggleOptionsMenu}
+        className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+      >
+        ✕
+      </button>
 
-      {/* Menu items */}
-      <ul className="flex flex-col space-y-2">
-        {message && (
-          <li className={`p-2 rounded-md ${message.startsWith('Error') ? 'text-red-500 bg-red-100' : 'text-green-500 bg-green-100'}`}>
-            {message}
-          </li>
-        )}
+      {/* Feedback message */}
+      {message && (
+        <div
+          className={`p-2 mb-2 rounded-md ${
+            message.startsWith("Error")
+              ? "text-red-500 bg-red-100"
+              : "text-green-600 bg-green-100"
+          }`}
+        >
+          {message}
+        </div>
+      )}
+
+      <ul className="space-y-3">
+        {/* Add Member Section */}
         {!isAddingMember ? (
-        <li className="p-2 hover:bg-gray-100 rounded-md cursor-pointer transition-colors" onClick={() => setIsAddingMember(true)}>Add Member</li>):(
-        <>
-         <li className="p-2">
+          <li
+            className="p-2 hover:bg-gray-100 rounded-md cursor-pointer"
+            onClick={() => setIsAddingMember(true)}
+          >
+            ➕ Add Member
+          </li>
+        ) : (
+          <>
+            <li>
               <input
                 type="email"
                 placeholder="Enter member's email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setEmail(""); // reset final email until chosen
+                }}
                 className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
+
+              {/* Suggestions dropdown */}
+              {results.length > 0 && (
+                <ul className="border rounded mt-2 bg-white shadow max-h-40 overflow-y-auto">
+                  {results.map((user, idx) => (
+                    <li
+                      key={idx}
+                      className="px-2 py-1 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => {
+                        setEmail(user.email);
+                        setQuery(user.email); // fill selected email
+                        setResults([]);
+                      }}
+                    >
+                      {user.email}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </li>
             <li
-              className="p-2 bg-indigo-500 text-white text-center rounded-md cursor-pointer hover:bg-indigo-600 transition-colors"
+              className="p-2 bg-indigo-500 text-white text-center rounded-md cursor-pointer hover:bg-indigo-600"
               onClick={handleAddMember}
             >
               Confirm
             </li>
           </>
         )}
-        <li className="p-2 hover:bg-gray-100 rounded-md cursor-pointer transition-colors text-red-500"
-        onClick={handleLeaveGroup}
-        >Leave Group</li>
-        <li className="pt-2">
+
+        {/* Leave group */}
+        <li
+          className="p-2 hover:bg-gray-100 rounded-md cursor-pointer text-red-500"
+          onClick={handleLeaveGroup}
+        >
+          🚪 Leave Group
+        </li>
+
+        {/* Members list */}
+        <li>
           <p className="font-bold text-sm text-gray-500 mb-1">Group Members</p>
-          <ul className="space-y-1">
+          <ul className="space-y-1 max-h-40 overflow-y-auto">
             {groupDetails?.users?.map((user, index) => (
               <li key={index} className="text-gray-700">
                 {user.username}
               </li>
             ))}
-        </ul>
+          </ul>
         </li>
       </ul>
     </div>
-    );
+  );
 }
 
 export default OptionsMenu;
